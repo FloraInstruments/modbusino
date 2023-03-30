@@ -61,9 +61,11 @@ ModbusinoSlave::ModbusinoSlave(uint8_t slave)
     }
 }
 
-void ModbusinoSlave::setup(long baud)
+void ModbusinoSlave::setup(int rxPin, int txPin, long baud)
 {
-    Serial.begin(baud);
+    Serial1.setRX(rxPin);
+    Serial1.setTX(txPin);
+    Serial1.begin(baud);
 }
 
 static int check_integrity(uint8_t *msg, uint8_t msg_length)
@@ -100,7 +102,7 @@ static void send_msg(uint8_t *msg, uint8_t msg_length)
     msg[msg_length++] = crc >> 8;
     msg[msg_length++] = crc & 0x00FF;
 
-    Serial.write(msg, msg_length);
+    Serial1.write(msg, msg_length);
 }
 
 static uint8_t response_exception(uint8_t slave, uint8_t function,
@@ -122,8 +124,8 @@ static void flush(void)
 
     /* Wait a moment to receive the remaining garbage but avoid getting stuck
      * because the line is saturated */
-    while (Serial.available() && i++ < 10) {
-        Serial.flush();
+    while (Serial1.available() && i++ < 10) {
+        Serial1.flush();
         delay(3);
     }
 }
@@ -148,9 +150,9 @@ static int receive(uint8_t *req, uint8_t _slave)
         /* The timeout is defined to ~10 ms between each bytes.  Precision is
            not that important so I rather to avoid millis() to apply the KISS
            principle (millis overflows after 50 days, etc) */
-        if (!Serial.available()) {
+        if (!Serial1.available()) {
             i = 0;
-            while (!Serial.available()) {
+            while (!Serial1.available()) {
                 if (++i == 10) {
                     /* Too late, bye */
                     return -1 - MODBUS_INFORMATIVE_RX_TIMEOUT;
@@ -159,7 +161,7 @@ static int receive(uint8_t *req, uint8_t _slave)
             }
         }
 
-        req[req_index] = Serial.read();
+        req[req_index] = Serial1.read();
 
         /* Moves the pointer to receive other data */
         req_index++;
@@ -285,7 +287,7 @@ int ModbusinoSlave::loop(uint16_t *tab_reg, uint16_t nb_reg)
     int rc = 0;
     uint8_t req[_MODBUSINO_RTU_MAX_ADU_LENGTH];
 
-    if (Serial.available()) {
+    if (Serial1.available()) {
         rc = receive(req, _slave);
         if (rc > 0) {
             reply(tab_reg, nb_reg, req, rc, _slave);
