@@ -61,8 +61,11 @@ ModbusinoSlave::ModbusinoSlave(uint8_t slave)
     }
 }
 
-void ModbusinoSlave::setup(int rxPin, int txPin, long baud)
+void ModbusinoSlave::setup(int rxPin, int txPin, int dirPin, long baud)
 {
+    _dirPin = dirPin;
+    pinMode(_dirPin, OUTPUT);
+    digitalWrite(_dirPin, LOW);
     Serial1.setRX(rxPin);
     Serial1.setTX(txPin);
     Serial1.begin(baud);
@@ -290,7 +293,10 @@ int ModbusinoSlave::loop(uint16_t *tab_reg, uint16_t nb_reg)
     if (Serial1.available()) {
         rc = receive(req, _slave);
         if (rc > 0) {
+            digitalWrite(_dirPin, HIGH);
             reply(tab_reg, nb_reg, req, rc, _slave);
+            delay(30);
+            digitalWrite(_dirPin, LOW);
         }
     }
 

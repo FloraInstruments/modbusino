@@ -31,10 +31,11 @@
 class ModbusinoSlave {
 public:
     ModbusinoSlave(uint8_t slave);
-    void setup(int rxPin, int txPin, long baud);
+    void setup(int rxPin, int txPin, int dirPin, long baud);
     int loop(uint16_t *tab_reg, uint16_t nb_reg);
 private:
     int _slave;
+    int _dirPin;
 };
 
 #endif
